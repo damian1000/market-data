@@ -144,6 +144,21 @@ class YahooQuoteSourceTest {
     }
 
     @Test
+    fun `treats a wrongly-typed field as unavailable`() {
+        // regularMarketPrice as an object: Gson's asBigDecimal throws its own runtime exception,
+        // which must surface as QuoteUnavailable, not leak through the contract.
+        handler =
+            respondJson(
+                200,
+                """{"chart":{"result":[{"meta":{"symbol":"AAPL","currency":"USD",""" +
+                    """"regularMarketPrice":{"raw":1.0},"chartPreviousClose":100.0,""" +
+                    """"regularMarketDayHigh":101.0,"regularMarketDayLow":99.0,""" +
+                    """"regularMarketTime":1700000000}}],"error":null}}""",
+            )
+        assertThrows<QuoteUnavailable> { source.latest("AAPL") }
+    }
+
+    @Test
     fun `treats a missing previous close as unavailable`() {
         handler = respondJson(200, chartMeta(chartPreviousClose = null, previousClose = null))
         assertThrows<QuoteUnavailable> { source.latest("AAPL") }
