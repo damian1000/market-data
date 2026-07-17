@@ -168,6 +168,60 @@ class YahooQuoteSourceTest {
         assertThrows<QuoteUnavailable> { dead.latest("AAPL") }
     }
 
+    @Test
+    fun `falls back to an empty exchange when neither exchange field is present`() {
+        handler = respondJson(200, chartMeta(explicitNull = setOf("fullExchangeName", "exchangeName")))
+        assertEquals("", source.latest("AAPL").instrument.exchange)
+    }
+
+    @Test
+    fun `treats an explicit JSON null symbol the same as a missing one`() {
+        handler = respondJson(200, chartMeta(explicitNull = setOf("symbol")))
+        assertThrows<QuoteUnavailable> { source.latest("AAPL") }
+    }
+
+    @Test
+    fun `treats an explicit JSON null currency the same as a missing one`() {
+        handler = respondJson(200, chartMeta(explicitNull = setOf("currency")))
+        assertThrows<QuoteUnavailable> { source.latest("AAPL") }
+    }
+
+    @Test
+    fun `falls back to the short name when the long name is an explicit JSON null`() {
+        handler = respondJson(200, chartMeta(explicitNull = setOf("longName")))
+        assertEquals("Apple Inc.", source.latest("AAPL").instrument.name)
+    }
+
+    @Test
+    fun `treats an explicit JSON null price the same as a missing one`() {
+        handler = respondJson(200, chartMeta(explicitNull = setOf("regularMarketPrice")))
+        assertThrows<QuoteUnavailable> { source.latest("AAPL") }
+    }
+
+    @Test
+    fun `falls back to the plain previous close when the chart one is an explicit JSON null`() {
+        handler = respondJson(200, chartMeta(explicitNull = setOf("chartPreviousClose"), previousClose = "315.32"))
+        assertEquals(BigDecimal("315.32"), source.latest("AAPL").previousClose)
+    }
+
+    @Test
+    fun `treats an explicit JSON null market time the same as a missing one`() {
+        handler = respondJson(200, chartMeta(explicitNull = setOf("regularMarketTime")))
+        assertThrows<QuoteUnavailable> { source.latest("AAPL") }
+    }
+
+    @Test
+    fun `reads the market as closed when the session start is an explicit JSON null`() {
+        handler = respondJson(200, chartMeta(tradingPeriod = """{"regular":{"start":null,"end":1050000}}"""))
+        assertFalse(source.latest("AAPL").marketOpen)
+    }
+
+    @Test
+    fun `reads the market as closed when the session end is an explicit JSON null`() {
+        handler = respondJson(200, chartMeta(tradingPeriod = """{"regular":{"start":1000000,"end":null}}"""))
+        assertFalse(source.latest("AAPL").marketOpen)
+    }
+
     private fun respondJson(
         status: Int,
         body: String,
@@ -202,23 +256,37 @@ class YahooQuoteSourceTest {
         previousClose: String? = null,
         marketTime: Long? = 1_000_150,
         tradingPeriod: String? = """{"regular":{"start":1000000,"end":1050000}}""",
+        // Fields named here are emitted as a literal JSON null, distinct from omitting the key
+        // entirely — the parser's `?.takeIf { !it.isJsonNull }` branch only fires for the former.
+        explicitNull: Set<String> = emptySet(),
     ): String {
-        val fields =
-            buildList {
-                symbol?.let { add(""""symbol":"$it"""") }
-                currency?.let { add(""""currency":"$it"""") }
-                add(""""fullExchangeName":"NasdaqGS"""")
-                add(""""exchangeName":"NMS"""")
-                longName?.let { add(""""longName":"$it"""") }
-                shortName?.let { add(""""shortName":"$it"""") }
-                if (includePrice) add(""""regularMarketPrice":317.31""")
-                chartPreviousClose?.let { add(""""chartPreviousClose":$it""") }
-                previousClose?.let { add(""""previousClose":$it""") }
-                add(""""regularMarketDayHigh":323.45""")
-                add(""""regularMarketDayLow":315.78""")
-                marketTime?.let { add(""""regularMarketTime":$it""") }
-                tradingPeriod?.let { add(""""currentTradingPeriod":$it""") }
+        val literalFields = mutableListOf<String>()
+
+        fun field(
+            name: String,
+            value: String?,
+            quoted: Boolean = true,
+        ) {
+            when {
+                name in explicitNull -> literalFields.add(""""$name":null""")
+                value == null -> return
+                quoted -> literalFields.add(""""$name":"$value"""")
+                else -> literalFields.add(""""$name":$value""")
             }
-        return """{"chart":{"result":[{"meta":{${fields.joinToString(",")}}}],"error":null}}"""
+        }
+        field("symbol", symbol)
+        field("currency", currency)
+        field("fullExchangeName", "NasdaqGS")
+        field("exchangeName", "NMS")
+        field("longName", longName)
+        field("shortName", shortName)
+        if (includePrice) field("regularMarketPrice", "317.31", quoted = false)
+        field("chartPreviousClose", chartPreviousClose, quoted = false)
+        field("previousClose", previousClose, quoted = false)
+        field("regularMarketDayHigh", "323.45", quoted = false)
+        field("regularMarketDayLow", "315.78", quoted = false)
+        field("regularMarketTime", marketTime?.toString(), quoted = false)
+        field("currentTradingPeriod", tradingPeriod, quoted = false)
+        return """{"chart":{"result":[{"meta":{${literalFields.joinToString(",")}}}],"error":null}}"""
     }
 }
