@@ -3,52 +3,22 @@
 // anchor its book to a real price instead of a synthetic seed. A library, depended on via
 // JitPack — no service, no box of its own.
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '2.3.21' // pinned: CodeQL's Kotlin extractor caps at <2.3.30
+    id 'io.github.damian1000.kotlin-conventions' version '0.1.0'
     id 'application'
-    id 'jacoco'
-    id 'com.diffplug.spotless' version '8.8.0'
-    id 'org.owasp.dependencycheck' version '12.2.2'
 }
 
 group = 'io.github.damian1000'
 version = '1.0.0'
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
-}
-
-kotlin {
-    jvmToolchain(25)
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25)
-    }
-}
 
 application {
     applicationName = 'market-data'
     mainClass = 'io.github.damian1000.marketdata.MainKt'
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation 'com.google.code.gson:gson:2.14.0'
     implementation 'org.slf4j:slf4j-api:2.0.18'
     runtimeOnly 'org.slf4j:slf4j-simple:2.0.18'
-
-    testImplementation platform("org.junit:junit-bom:6.1.2")
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-test {
-    useJUnitPlatform()
-    finalizedBy jacocoTestReport
 }
 
 // Only the process entry point (MainKt — main() fetches a live quote and prints it) is excluded.
@@ -56,66 +26,17 @@ test {
 def coverageExclusions = ['**/marketdata/MainKt.class']
 
 jacocoTestReport {
-    dependsOn test
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, excludes: coverageExclusions)
         }))
-    }
-    reports {
-        xml.required = true
-        html.required = true
     }
 }
 
 jacocoTestCoverageVerification {
-    dependsOn jacocoTestReport
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, excludes: coverageExclusions)
         }))
-    }
-    violationRules {
-        rule {
-            limit {
-                counter = 'INSTRUCTION'
-                value = 'COVEREDRATIO'
-                minimum = 0.90
-            }
-        }
-    }
-}
-
-check.dependsOn jacocoTestCoverageVerification
-
-spotless {
-    kotlin {
-        target 'src/**/*.kt'
-        ktlint('1.5.0')
-    }
-    kotlinGradle {
-        target '*.gradle.kts'
-        ktlint('1.5.0')
-    }
-    // Config/docs (YAML workflows, Markdown) held to the same bar as the Kotlin. Needs Node on
-    // PATH for Prettier (present on CI runners and dev machines).
-    format 'config', {
-        target '.github/**/*.yml', '.github/**/*.yaml', '*.md'
-        prettier('3.4.2')
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-}
-
-// OWASP dependency vulnerability scanner. Run: ./gradlew dependencyCheckAnalyze
-// Fails the build on any dependency with CVSS >= 7.0.
-dependencyCheck {
-    failBuildOnCVSS = 7.0f
-    formats = ['HTML', 'JSON']
-    analyzers {
-        assemblyEnabled = false
-        nodeEnabled = false
-        nodeAuditEnabled = false
-        nuspecEnabled = false
     }
 }
