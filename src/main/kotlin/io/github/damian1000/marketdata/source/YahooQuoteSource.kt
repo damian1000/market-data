@@ -45,7 +45,18 @@ class YahooQuoteSource(
             .proxy(ProxySelector.getDefault()) // honour a system proxy where one is set; DIRECT otherwise
             .build(),
 ) : QuoteSource {
-    override fun latest(symbol: String): Quote {
+    // The boundary catch converts any parse-time surprise (a field of the wrong JSON type throws
+    // Gson's own runtime exceptions, not ours) into the one exception type the contract names.
+    override fun latest(symbol: String): Quote =
+        try {
+            buildQuote(symbol)
+        } catch (e: QuoteUnavailable) {
+            throw e
+        } catch (e: RuntimeException) {
+            throw QuoteUnavailable("Yahoo returned a malformed response for $symbol", e)
+        }
+
+    private fun buildQuote(symbol: String): Quote {
         val meta = fetchMeta(symbol)
         val instrument =
             Instrument(
