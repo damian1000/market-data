@@ -3,7 +3,7 @@
 // anchor its book to a real price instead of a synthetic seed. A library, depended on via
 // JitPack — no service, no box of its own.
 plugins {
-    id 'io.github.damian1000.kotlin-conventions' version '0.1.0'
+    id 'io.github.damian1000.kotlin-conventions' version '0.3.0'
     id 'application'
 }
 
@@ -16,9 +16,9 @@ application {
 }
 
 dependencies {
-    implementation 'com.google.code.gson:gson:2.14.0'
-    implementation 'org.slf4j:slf4j-api:2.0.18'
-    runtimeOnly 'org.slf4j:slf4j-simple:2.0.18'
+    implementation deps.gson
+    implementation deps.slf4j.api
+    runtimeOnly deps.slf4j.simple
 }
 
 // Only the process entry point (MainKt — main() fetches a live quote and prints it) is excluded.
