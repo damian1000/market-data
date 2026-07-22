@@ -1,4 +1,7 @@
+# Pin only the build JVM: JitPack's default is now JDK 8, too old to run Gradle. openjdk21 runs
+# Gradle and can load the JDK-21 build-conventions plugin; the Foojay resolver still provisions the
+# JDK 25 toolchain the code compiles with. The install step is left to JitPack's default, which
+# publishes this single-module library (as it did before this file existed) — there is no
+# maven-publish task of our own to call.
 jdk:
   - openjdk21
-install:
-  - ./gradlew publishToMavenLocal --no-daemon
