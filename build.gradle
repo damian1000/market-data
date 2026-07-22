@@ -3,7 +3,7 @@
 // anchor its book to a real price instead of a synthetic seed. A library, depended on via
 // JitPack — no service, no box of its own.
 plugins {
-    id 'io.github.damian1000.kotlin-conventions' version '0.4.2'
+    id 'io.github.damian1000.kotlin-conventions' version '0.4.3'
     id 'application'
 }
 
