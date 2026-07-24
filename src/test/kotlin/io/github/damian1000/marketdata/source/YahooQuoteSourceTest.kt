@@ -48,6 +48,21 @@ class YahooQuoteSourceTest {
     }
 
     @Test
+    fun `encodes the symbol as one path segment so a caller cannot escape the path`() {
+        val requested = mutableListOf<String>()
+        handler = { exchange ->
+            requested.add(exchange.requestURI.toString())
+            writeBody(exchange, 200, chartMeta())
+        }
+
+        source.latest("BRK.B") // a share class: '.' is path-safe and must survive unencoded
+        source.latest("A B/C?x=1") // space, separator, and query chars must all be percent-encoded
+
+        assertEquals("/v8/finance/chart/BRK.B?interval=1d&range=1d", requested[0])
+        assertEquals("/v8/finance/chart/A%20B%2FC%3Fx%3D1?interval=1d&range=1d", requested[1])
+    }
+
+    @Test
     fun `reads the market as open when the last trade is inside the session window`() {
         handler = respondJson(200, chartMeta(marketTime = 1_000_150)) // start 1_000_000, end 1_050_000
         assertTrue(source.latest("AAPL").marketOpen)

@@ -8,9 +8,11 @@ import io.github.damian1000.marketdata.model.Quote
 import java.math.BigDecimal
 import java.net.ProxySelector
 import java.net.URI
+import java.net.URLEncoder
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.time.Instant
 
@@ -77,7 +79,7 @@ class YahooQuoteSource(
     }
 
     private fun fetchMeta(symbol: String): JsonObject {
-        val body = get("$baseUrl/v8/finance/chart/$symbol?interval=1d&range=1d")
+        val body = get("$baseUrl/v8/finance/chart/${encodePathSegment(symbol)}?interval=1d&range=1d")
         val root =
             try {
                 JsonParser.parseString(body).asJsonObject
@@ -158,6 +160,13 @@ class YahooQuoteSource(
         meta: JsonObject,
         field: String,
     ): Long = meta.get(field)?.takeIf { !it.isJsonNull }?.asLong ?: throw missing(field)
+
+    // The symbol is interpolated into the request path, so it is encoded as a single path segment:
+    // a direct library caller isn't bound by the registry's symbol validation, and an unescaped '/'
+    // or '?' would otherwise reshape the request into a different path or smuggle query parameters.
+    // URLEncoder leaves '.' untouched, so a share class like BRK.B stays intact; its one path-unsafe
+    // quirk — encoding space as '+' (form semantics) — is corrected to %20 for a path segment.
+    private fun encodePathSegment(value: String): String = URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20")
 
     private fun missing(field: String) = QuoteUnavailable("Yahoo meta was missing $field")
 
