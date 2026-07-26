@@ -5,14 +5,29 @@
 plugins {
     id 'io.github.damian1000.kotlin-conventions' version '0.4.8'
     id 'application'
+    id 'maven-publish'
 }
 
 group = 'io.github.damian1000'
-version = '1.1.6'
+version = '1.1.7'
 
 application {
     applicationName = 'market-data'
     mainClass = 'io.github.damian1000.marketdata.MainKt'
+}
+
+// The build publishes itself rather than leaving JitPack to inject its own invocation. That
+// injection is what blocked adding the bounded distribution-download retry the other JitPack
+// builds carry: an explicit `install:` in jitpack.yml replaces the generated command, and
+// without a publication of our own there would be nothing left to publish. No remote
+// repository — JitPack builds from the git tag and serves the result under
+// com.github.damian1000:market-data:<tag>; publishing exists for publishToMavenLocal.
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
 }
 
 dependencies {
