@@ -10,3 +10,14 @@ before_install:
   - curl -sSL "https://api.adoptium.net/v3/binary/latest/25/ga/linux/x64/jdk/hotspot/normal/eclipse" -o /tmp/jdk25.tar.gz
   - mkdir -p /tmp/jdk25 && tar -xzf /tmp/jdk25.tar.gz -C /tmp/jdk25 --strip-components=1
   - printf '\norg.gradle.java.installations.paths=/tmp/jdk25\n' >> gradle.properties
+install:
+  # JitPack's builder intermittently fails to resolve services.gradle.org, which the Gradle
+  # wrapper contacts to download its pinned distribution. Retry the whole invocation a bounded
+  # number of times rather than dropping the wrapper: the pinned version is what CI and local
+  # dev build with, and JitPack caches a failed build against the tag permanently, so one
+  # network blip costs a version number.
+  #
+  # Naming the command at all means the build must publish itself — hence maven-publish in
+  # build.gradle. Before that, JitPack generated the invocation and supplied the publishing,
+  # and there was nowhere to put the retry.
+  - n=1; until ./gradlew --no-daemon publishToMavenLocal; do n=$((n+1)); if [ "$n" -gt 4 ]; then echo "gradle failed after 4 attempts"; exit 1; fi; echo "retrying, attempt $n"; sleep 20; done
