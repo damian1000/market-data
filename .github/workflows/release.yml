@@ -1,0 +1,14 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    uses: damian1000/.github/.github/workflows/release.yml@main
+    with:
+      build-command: clean build
+      # Notes only: consumers resolve this library from JitPack, which builds the artifact from
+      # the tag itself. Attaching a second copy here would publish two things that could disagree.
