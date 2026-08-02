@@ -16,11 +16,29 @@ import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.time.Instant
 
-/** Thrown when a provider cannot supply a usable quote for a symbol — HTTP error, or malformed body. */
-class QuoteUnavailable(
+/**
+ * Thrown when a provider cannot supply a usable quote for a symbol. On its own this means the
+ * provider failed — unreachable, timed out, rate-limited, or answered with something unusable —
+ * which says nothing about whether the symbol exists. [UnknownSymbol] is the narrower case where
+ * the provider answered and reported that it has no such instrument.
+ *
+ * The distinction is a caller's, not a formality: a failure is worth retrying shortly, an unknown
+ * symbol is not (see [io.github.damian1000.marketdata.cache.QuoteCache]'s negative cache).
+ */
+open class QuoteUnavailable(
     message: String,
     cause: Throwable? = null,
 ) : RuntimeException(message, cause)
+
+/**
+ * The provider answered and has no instrument under this symbol — a delisted ticker, a typo, or a
+ * market this provider does not cover. Distinct from a plain [QuoteUnavailable] because retrying
+ * sooner cannot change the answer.
+ */
+class UnknownSymbol(
+    message: String,
+    cause: Throwable? = null,
+) : QuoteUnavailable(message, cause)
 
 /** Where a live [Quote] comes from. The seam a cache or consumer depends on, not the provider. */
 fun interface QuoteSource {
@@ -89,12 +107,14 @@ class YahooQuoteSource(
                 throw QuoteUnavailable("Yahoo returned a non-JSON body for $symbol", e)
             }
         val chart = root.getAsJsonObject("chart") ?: throw QuoteUnavailable("no chart in response for $symbol")
+        // Yahoo answered about this symbol and had nothing for it: that is a statement about the
+        // symbol, not about the provider's health, so it must not be read as an outage.
         chart.get("error")?.takeIf { !it.isJsonNull }?.let {
-            throw QuoteUnavailable("Yahoo reported an error for $symbol: $it")
+            throw UnknownSymbol("Yahoo reported an error for $symbol: $it")
         }
         val results = chart.getAsJsonArray("result")
         if (results == null || results.isEmpty) {
-            throw QuoteUnavailable("Yahoo returned no result for $symbol")
+            throw UnknownSymbol("Yahoo returned no result for $symbol")
         }
         return results[0].asJsonObject.getAsJsonObject("meta")
             ?: throw QuoteUnavailable("Yahoo result carried no meta for $symbol")
@@ -117,6 +137,12 @@ class YahooQuoteSource(
                 Thread.currentThread().interrupt()
                 throw QuoteUnavailable("Yahoo request interrupted for $url", e)
             }
+        // 404 is Yahoo's answer for a ticker it does not carry, and it arrives before the body can
+        // be parsed. Every other non-200 — 429, 5xx, a proxy's error page — is the provider, not
+        // the symbol, and stays retryable.
+        if (response.statusCode() == 404) {
+            throw UnknownSymbol("Yahoo has no instrument for $url")
+        }
         if (response.statusCode() != 200) {
             throw QuoteUnavailable("Yahoo returned HTTP ${response.statusCode()} for $url")
         }

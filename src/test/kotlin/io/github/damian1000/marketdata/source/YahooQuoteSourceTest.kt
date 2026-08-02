@@ -105,21 +105,29 @@ class YahooQuoteSourceTest {
     }
 
     @Test
-    fun `treats an unknown symbol (Yahoo 404 error body) as unavailable`() {
+    fun `treats an unknown symbol (Yahoo 404 error body) as an unknown symbol`() {
         handler = respondJson(404, errorBody("Not Found", "No data found, symbol may be delisted"))
-        assertThrows<QuoteUnavailable> { source.latest("NOPE") }
+        assertThrows<UnknownSymbol> { source.latest("NOPE") }
     }
 
     @Test
-    fun `treats an error carried in a 200 body as unavailable`() {
+    fun `treats an error carried in a 200 body as an unknown symbol`() {
         handler = respondJson(200, """{"chart":{"result":null,"error":{"code":"Bad Request"}}}""")
-        assertThrows<QuoteUnavailable> { source.latest("AAPL") }
+        assertThrows<UnknownSymbol> { source.latest("AAPL") }
+    }
+
+    // The two below are the provider failing, not an answer about the symbol. Asserting the base
+    // type is not enough — UnknownSymbol would satisfy it — so each pins the exact class.
+    @Test
+    fun `treats a non-200 as a provider failure, not an unknown symbol`() {
+        handler = respondJson(500, "{}")
+        assertEquals(QuoteUnavailable::class.java, assertThrows<QuoteUnavailable> { source.latest("AAPL") }.javaClass)
     }
 
     @Test
-    fun `treats a non-200 as unavailable`() {
-        handler = respondJson(500, "{}")
-        assertThrows<QuoteUnavailable> { source.latest("AAPL") }
+    fun `treats a rate-limit response as a provider failure, not an unknown symbol`() {
+        handler = respondJson(429, "{}")
+        assertEquals(QuoteUnavailable::class.java, assertThrows<QuoteUnavailable> { source.latest("AAPL") }.javaClass)
     }
 
     @Test
