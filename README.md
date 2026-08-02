@@ -40,9 +40,14 @@ with every quote so a consumer can show how fresh it is.
 
 ## Failure handling
 
-- An unknown or delisted symbol (Yahoo answers `404` with an error body), a non-`200`, a non-JSON
-  body, or a missing required field all surface as `QuoteUnavailable`.
-- `QuoteCache` turns that into resilience: the fetch failing does not disturb the stored snapshot,
+- An unknown or delisted symbol — Yahoo answers `404` with an error body, or carries an error in a
+  `200` — surfaces as `UnknownSymbol`. A provider that is unreachable, rate-limited, returning a
+  non-`200`, or answering with an unparseable body surfaces as its supertype `QuoteUnavailable`.
+- The split is what makes the negative cache safe. `QuoteCache` remembers an `UnknownSymbol` for a
+  TTL so a free-text ticker box cannot hammer the provider, but never remembers a failure: an
+  outage says nothing about whether a symbol exists, and caching it would leave a valid ticker
+  first requested mid-outage suppressed for the rest of the TTL after recovery.
+- `QuoteCache` turns both into resilience: the fetch failing does not disturb the stored snapshot,
   and the caller keeps getting the last good mark.
 
 The loopback test replicates the provider's error gate — it answers `404` with Yahoo's own error

@@ -4,6 +4,7 @@ import io.github.damian1000.marketdata.model.Instrument
 import io.github.damian1000.marketdata.model.Quote
 import io.github.damian1000.marketdata.source.QuoteSource
 import io.github.damian1000.marketdata.source.QuoteUnavailable
+import io.github.damian1000.marketdata.source.UnknownSymbol
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -80,7 +81,7 @@ class QuoteCacheTest {
 
     @Test
     fun `an unknown symbol is negative-cached so repeat refreshes skip the provider`() {
-        val source = ScriptedSource(ArrayDeque(listOf(Result.failure(QuoteUnavailable("no such symbol")))))
+        val source = ScriptedSource(ArrayDeque(listOf(Result.failure(UnknownSymbol("no such symbol")))))
         val now = Instant.parse("2026-07-14T15:00:00Z")
         val cache = QuoteCache(source, clock = { now }, negativeTtl = Duration.ofMinutes(5))
 
@@ -94,7 +95,7 @@ class QuoteCacheTest {
         val source =
             ScriptedSource(
                 ArrayDeque(
-                    listOf(Result.failure(QuoteUnavailable("no such symbol")), Result.failure(QuoteUnavailable("still no"))),
+                    listOf(Result.failure(UnknownSymbol("no such symbol")), Result.failure(UnknownSymbol("still no"))),
                 ),
             )
         var now = Instant.parse("2026-07-14T15:00:00Z")
@@ -110,7 +111,7 @@ class QuoteCacheTest {
     fun `a symbol unknown at first is served normally once it resolves`() {
         val source =
             ScriptedSource(
-                ArrayDeque(listOf(Result.failure(QuoteUnavailable("not yet")), Result.success(quoteAt("110")))),
+                ArrayDeque(listOf(Result.failure(UnknownSymbol("not yet")), Result.success(quoteAt("110")))),
             )
         var now = Instant.parse("2026-07-14T15:00:00Z")
         val cache = QuoteCache(source, clock = { now }, negativeTtl = Duration.ofMinutes(5))
@@ -121,6 +122,50 @@ class QuoteCacheTest {
         assertNotNull(resolved, "the retry resolves")
         assertSame(resolved, cache.latest("AAPL"))
         assertEquals(2, source.calls)
+    }
+
+    @Test
+    fun `a provider failure is not negative-cached so the next refresh still reaches the provider`() {
+        val source =
+            ScriptedSource(
+                ArrayDeque(listOf(Result.failure(QuoteUnavailable("Yahoo down")), Result.success(quoteAt("110")))),
+            )
+        val now = Instant.parse("2026-07-14T15:00:00Z")
+        val cache = QuoteCache(source, clock = { now }, negativeTtl = Duration.ofMinutes(5))
+
+        assertNull(cache.refresh("AAPL"), "nothing to serve during the outage")
+
+        // Same instant, well inside the negative ttl: a valid symbol first asked for mid-outage was
+        // previously suppressed until the ttl expired, long after the provider had recovered.
+        val recovered = cache.refresh("AAPL")
+
+        assertNotNull(recovered, "the symbol resolves as soon as the provider recovers")
+        assertEquals(2, source.calls, "an outage must not stand in for an answer about the symbol")
+    }
+
+    @Test
+    fun `an unknown symbol that later starts failing keeps being retried`() {
+        val source =
+            ScriptedSource(
+                ArrayDeque(
+                    listOf(
+                        Result.failure(UnknownSymbol("no such symbol")),
+                        Result.failure(QuoteUnavailable("down")),
+                        Result.failure(QuoteUnavailable("still down")),
+                    ),
+                ),
+            )
+        var now = Instant.parse("2026-07-14T15:00:00Z")
+        val cache = QuoteCache(source, clock = { now }, negativeTtl = Duration.ofMinutes(5))
+
+        assertNull(cache.refresh("ZZZZ"))
+        now = now.plus(Duration.ofMinutes(6))
+        assertNull(cache.refresh("ZZZZ"), "the mark expired and the retry hit an outage")
+
+        // The outage must not re-arm the negative cache, or an unknown-then-restored symbol would
+        // stay suppressed on the strength of a failure that said nothing about it.
+        assertNull(cache.refresh("ZZZZ"))
+        assertEquals(3, source.calls)
     }
 
     @Test
