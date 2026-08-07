@@ -91,5 +91,5 @@ dependencies { implementation 'com.github.damian1000:market-data:v1.0.0' }
 
 ```bash
 ./gradlew spotlessCheck   # ktlint + Prettier (config/docs)
-./gradlew clean check     # tests + 90% instruction coverage gate
+./gradlew clean build     # tests, 90% coverage gate, and packaging — what CI runs
 ```
