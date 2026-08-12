@@ -3,7 +3,7 @@
 // anchor its book to a real price instead of a synthetic seed. A library, depended on via
 // JitPack — no service, no box of its own.
 plugins {
-    id 'io.github.damian1000.kotlin-conventions' version '0.4.16'
+    id 'com.damianhoward.kotlin-conventions' version '0.5.0'
     id 'application'
     id 'maven-publish'
 }
@@ -21,7 +21,7 @@ application {
 // builds carry: an explicit `install:` in jitpack.yml replaces the generated command, and
 // without a publication of our own there would be nothing left to publish. No remote
 // repository — JitPack builds from the git tag and serves the result under
-// com.github.damian1000:market-data:<tag>; publishing exists for publishToMavenLocal.
+// com.github.damianhoward:market-data:<tag>; publishing exists for publishToMavenLocal.
 publishing {
     publications {
         maven(MavenPublication) {
