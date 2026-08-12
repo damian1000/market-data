@@ -1,7 +1,7 @@
-package io.github.damian1000.marketdata
+package com.damianhoward.marketdata
 
-import io.github.damian1000.marketdata.cache.QuoteCache
-import io.github.damian1000.marketdata.source.YahooQuoteSource
+import com.damianhoward.marketdata.cache.QuoteCache
+import com.damianhoward.marketdata.source.YahooQuoteSource
 
 /**
  * Prints a live quote for one symbol (default AAPL, or `MARKET_DATA_SYMBOL`) and exits — a hand-run

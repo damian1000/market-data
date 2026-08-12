@@ -1,10 +1,10 @@
-package io.github.damian1000.marketdata.source
+package com.damianhoward.marketdata.source
 
+import com.damianhoward.marketdata.model.Instrument
+import com.damianhoward.marketdata.model.Quote
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
-import io.github.damian1000.marketdata.model.Instrument
-import io.github.damian1000.marketdata.model.Quote
 import java.math.BigDecimal
 import java.net.ProxySelector
 import java.net.URI
@@ -23,7 +23,7 @@ import java.time.Instant
  * the provider answered and reported that it has no such instrument.
  *
  * The distinction is a caller's, not a formality: a failure is worth retrying shortly, an unknown
- * symbol is not (see [io.github.damian1000.marketdata.cache.QuoteCache]'s negative cache).
+ * symbol is not (see [com.damianhoward.marketdata.cache.QuoteCache]'s negative cache).
  */
 open class QuoteUnavailable(
     message: String,

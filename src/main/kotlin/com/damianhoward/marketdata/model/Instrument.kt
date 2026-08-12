@@ -1,4 +1,4 @@
-package io.github.damian1000.marketdata.model
+package com.damianhoward.marketdata.model
 
 /**
  * A tradable listing's identity: its ticker [symbol], the issuer [name], the [currency] it trades
