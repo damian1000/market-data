@@ -1,4 +1,4 @@
-package io.github.damian1000.marketdata.source
+package com.damianhoward.marketdata.source
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer

@@ -1,10 +1,10 @@
-package io.github.damian1000.marketdata.cache
+package com.damianhoward.marketdata.cache
 
-import io.github.damian1000.marketdata.model.Instrument
-import io.github.damian1000.marketdata.model.Quote
-import io.github.damian1000.marketdata.source.QuoteSource
-import io.github.damian1000.marketdata.source.QuoteUnavailable
-import io.github.damian1000.marketdata.source.UnknownSymbol
+import com.damianhoward.marketdata.model.Instrument
+import com.damianhoward.marketdata.model.Quote
+import com.damianhoward.marketdata.source.QuoteSource
+import com.damianhoward.marketdata.source.QuoteUnavailable
+import com.damianhoward.marketdata.source.UnknownSymbol
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull

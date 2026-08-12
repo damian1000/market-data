@@ -8,12 +8,12 @@ plugins {
     id 'maven-publish'
 }
 
-group = 'io.github.damian1000'
+group = 'com.damianhoward'
 version = '1.1.8'
 
 application {
     applicationName = 'market-data'
-    mainClass = 'io.github.damian1000.marketdata.MainKt'
+    mainClass = 'com.damianhoward.marketdata.MainKt'
 }
 
 // The build publishes itself rather than leaving JitPack to inject its own invocation. That

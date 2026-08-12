@@ -1,12 +1,12 @@
 # Market Data
 
-[![CI](https://github.com/damian1000/market-data/actions/workflows/ci.yml/badge.svg)](https://github.com/damian1000/market-data/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/damian1000/market-data/actions/workflows/codeql.yml/badge.svg)](https://github.com/damian1000/market-data/actions/workflows/codeql.yml)
-[![codecov](https://codecov.io/gh/damian1000/market-data/graph/badge.svg)](https://codecov.io/gh/damian1000/market-data)
+[![CI](https://github.com/damianhoward/market-data/actions/workflows/ci.yml/badge.svg)](https://github.com/damianhoward/market-data/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/damianhoward/market-data/actions/workflows/codeql.yml/badge.svg)](https://github.com/damianhoward/market-data/actions/workflows/codeql.yml)
+[![codecov](https://codecov.io/gh/damianhoward/market-data/graph/badge.svg)](https://codecov.io/gh/damianhoward/market-data)
 
 Real instrument reference and quotes for the trading estate: fetch a symbol's mark from a live
 provider and serve the last-good snapshot, so a consumer can anchor to a real price — the
-[live order book](https://github.com/damian1000/orderbook) opens its book around the actual last
+[live order book](https://github.com/damianhoward/orderbook) opens its book around the actual last
 trade in AAPL rather than a synthetic seed. A library, pulled in via JitPack; it runs in the
 consumer's process, not as a service of its own.
 
@@ -84,7 +84,7 @@ println("${quote.instrument.name}: ${quote.last} ${quote.instrument.currency}")
 
 ```groovy
 repositories { maven { url 'https://jitpack.io' } }
-dependencies { implementation 'com.github.damian1000:market-data:v1.0.0' }
+dependencies { implementation 'com.github.damianhoward:market-data:v1.0.0' }
 ```
 
 ## Build

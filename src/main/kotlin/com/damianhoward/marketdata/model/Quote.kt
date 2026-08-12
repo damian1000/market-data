@@ -1,4 +1,4 @@
-package io.github.damian1000.marketdata.model
+package com.damianhoward.marketdata.model
 
 import java.math.BigDecimal
 import java.math.RoundingMode
