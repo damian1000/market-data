@@ -3,7 +3,7 @@
 // anchor its book to a real price instead of a synthetic seed. A library, depended on via
 // JitPack — no service, no box of its own.
 plugins {
-    id 'com.damianhoward.kotlin-conventions' version '0.5.0'
+    id 'com.damianhoward.kotlin-conventions' version '0.5.1'
     id 'application'
     id 'maven-publish'
 }
